@@ -1,0 +1,157 @@
+﻿@model List<EgitimPortali.DTO.EducationsDTO>
+
+@{
+    ViewData["Title"] = "Educations";
+}
+
+<h1>Educations</h1>
+
+<div class="mb-3">
+    <a href="#" id="refreshBtn" class="btn btn-primary">Refresh</a>
+    <a href="#" id="addBtn" class="btn btn-success">Add New</a>
+</div>
+
+<table id="educationTable" class="table">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Time</th>
+            <th>Active</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var education in Model)
+        {
+            <tr>
+                <td>@education.EducationTitle</td>
+                <td>@education.Time</td>
+                <td>@(education.IsActive ? "Yes" : "No")</td>
+                <td>
+                    <button class="btn btn-info btn-sm editBtn" data-id="@education.EducationId">Edit</button>
+                    <button class="btn btn-danger btn-sm deleteBtn" data-id="@education.EducationId">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- Modal for Add/Edit -->
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Add/Edit Education</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <div class="form-group">
+                        <label for="educationTitle">Title</label>
+                        <input type="text" class="form-control" id="educationTitle" placeholder="Enter title">
+                    </div>
+                    <div class="form-group">
+                        <label for="educationTime">Time</label>
+                        <input type="text" class="form-control" id="educationTime" placeholder="Enter time">
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="educationActive">
+                        <label class="form-check-label" for="educationActive">Active</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveBtn">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Refresh button click handler
+            $('#refreshBtn').click(function () {
+                location.reload();
+            });
+
+            // Add button click handler
+            $('#addBtn').click(function () {
+                $('#editModalLabel').text('Add Education');
+                $('#educationTitle').val('');
+                $('#educationTime').val('');
+                $('#educationActive').prop('checked', false);
+                $('#editModal').modal('show');
+            });
+
+            // Edit button click handler
+            $('.editBtn').click(function () {
+                var id = $(this).data('id');
+                // AJAX request to fetch education data by id and fill the modal form fields
+                $.ajax({
+                    url: '/api/Educations/' + id,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        $('#editModalLabel').text('Edit Education');
+                        $('#educationTitle').val(data.educationTitle);
+                        $('#educationTime').val(data.time);
+                        $('#educationActive').prop('checked', data.isActive);
+                        $('#editModal').modal('show');
+                    },
+                    error: function () {
+                        alert('Error fetching education data.');
+                    }
+                });
+            });
+
+            // Save button click handler
+            $('#saveBtn').click(function () {
+                // Gather data from modal form
+                var education = {
+                    educationTitle: $('#educationTitle').val(),
+                    time: $('#educationTime').val(),
+                    isActive: $('#educationActive').prop('checked')
+                };
+                // Determine if this is an add or edit operation
+                var id = $('.editBtn').data('id');
+                var method = id ? 'PUT' : 'POST';
+                var url = id ? '/api/Educations/' + id : '/api/Educations';
+                // AJAX request to add/edit education data
+                $.ajax({
+                    url: url,
+                    type: method,
+                    contentType: 'application/json',
+                    data: JSON.stringify(education),
+                    success: function () {
+                        location.reload();
+                    },
+                    error: function () {
+                        alert('Error saving education data.');
+                    }
+                });
+            });
+
+            // Delete button click handler
+            $('.deleteBtn').click(function () {
+                if (confirm('Are you sure you want to delete this education?')) {
+                    var id = $(this).data('id');
+                    // AJAX request to delete education by id
+                    $.ajax({
+                        url: '/api/Educations/' + id,
+                        type: 'DELETE',
+                        success: function () {
+                            location.reload();
+                        },
+                        error: function () {
+                            alert('Error deleting education data.');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+}
